@@ -1,0 +1,26 @@
+name: Build and send to TestFlight
+
+# Run by hand from the Actions tab once the first build has been done
+# interactively (see README). Needs the EXPO_TOKEN repository secret.
+on:
+  workflow_dispatch:
+
+jobs:
+  ios:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+      - run: npm ci
+      - run: eas build --platform ios --profile production --non-interactive --auto-submit
