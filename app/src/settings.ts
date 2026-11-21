@@ -29,7 +29,7 @@ export const DEFAULT_SETTINGS: Settings = {
   nativeLocale: "en-US",
   level: LEVELS[1],
   topic: TOPICS[0],
-  model: "claude-opus-5-5",
+  model: "claude-haiku-5-5",
   speechRate: 0.9,
   silenceMs: 1600,
   alwaysShowTranslations: false,

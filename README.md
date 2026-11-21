@@ -28,8 +28,8 @@ holds an earlier prototype that runs as a page inside Claude.
 
 1. **A Claude API key.** Create one at <https://platform.claude.com> under
    API keys and add credit. The app asks for it on first launch and keeps it in
-   the iPhone keychain. Usage is billed to that key. Opus 5.5 is the default;
-   Haiku 5.5 in Settings is much cheaper and replies faster.
+   the iPhone keychain. Usage is billed to that key. Haiku 5.5 is the default
+   (fast and cheap); switch to Opus 5.5 in Settings for more careful corrections.
 2. **An Apple Developer Program membership** ($99/year) to use TestFlight.
 3. **A free Expo account** at <https://expo.dev>. Expo's EAS service builds
    the iOS app in the cloud, so you don't need a Mac.
