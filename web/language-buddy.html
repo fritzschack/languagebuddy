@@ -59,6 +59,7 @@ main{flex:1;overflow-y:auto;padding-block:8px 16px;display:flex;flex-direction:c
 .chip svg{width:14px;height:14px}
 .chip[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--ink)}
 .translation{font-size:.9rem;color:var(--muted);padding:2px 4px;font-style:italic}
+.me .translation{text-align:right}
 .panel{background:var(--sun-soft);color:var(--ink);border-radius:12px;padding:10px 12px;font-size:.88rem;display:flex;flex-direction:column;gap:8px}
 .panel h3{margin:0;font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;color:var(--sun-ink)}
 .vocab{display:grid;grid-template-columns:auto 1fr;gap:3px 12px}
@@ -112,7 +113,7 @@ textarea{flex:1;min-width:0;font:inherit;font-size:1rem;color:var(--ink);backgro
     </div>
     <div class="toggles">
       <label><input type="checkbox" id="autoSpeak" checked> Speak replies aloud</label>
-      <label><input type="checkbox" id="alwaysTranslate"> Always show translation</label>
+      <label><input type="checkbox" id="alwaysTranslate" checked> Show translations</label>
       <label><input type="checkbox" id="autoSend" checked> Send when I stop talking</label>
       <label>Speed <input type="range" id="rate" min="0.7" max="1.2" step="0.05" value="0.9" aria-label="Speaking speed"></label>
       <button class="btn" id="startBtn">Start</button>
@@ -166,7 +167,7 @@ const setStatus=(t,err)=>{const s=$("status");s.textContent=t;s.classList.toggle
   const c=window.claude; if(!c||!c.use){setStatus("Open this page in Claude to chat.",true);return;}
   [sample,tts,dict]=await Promise.all([c.use("sample"),c.use("tts"),c.use("dictation")]);
   if(!sample)setStatus("Claude isn't available in this view, so the partner can't reply.",true);
-  if(!dict){$("mic").hidden=true;$("micNote").textContent="Voice input needs Chrome or the Claude desktop app. Type instead.";}
+  if(!dict){$("mic").hidden=true;$("micNote").textContent="On your phone, tap the mic key on your keyboard to talk. Switch the keyboard to "+S().tName+" first.";}
   else{
     dict.onPartial(({text})=>{partial=text;renderInput();});
     dict.onFinal(({text})=>{committed+=text;partial="";if(!committed.trim())committed=committed.trimStart();renderInput();});
@@ -239,6 +240,10 @@ function meTurn(text,fix){
   if(fix)attachFix(w,fix);
   scrollEnd();return w;
 }
+function addTranslation(w,text){
+  const tr=el("div","translation",esc(text));tr.dataset.tr="1";tr.hidden=!$("alwaysTranslate").checked;
+  w.querySelector(".bubble").after(tr);scrollEnd();
+}
 function attachFix(w,fix){
   if(!fix)return;
   if(fix.ok){w.append(el("div","fix good",`<span class="why">${esc(fix.explanation||"Sounds natural.")}</span>`));}
@@ -254,7 +259,7 @@ function showExample(){
     vocab:[{word:"¿Qué tal…?",meaning:"How's…? (casual)"},{word:"hiciste",meaning:"you did (past of hacer)"}],
     hint:"Answer with the past tense: “Hoy fui…”, “Hoy trabajé…”.",
     suggestions:[{target:"Hoy fui al gimnasio y después trabajé.",native:"Today I went to the gym and then worked."},{target:"No mucho, estuve en casa.",native:"Not much, I was at home."}]},{example:true});
-  meTurn("Hoy yo fui a la playa con mi amigos.",{ok:false,corrected:"Hoy fui a la playa con mis amigos.",explanation:"“Amigos” is plural, so use “mis”. You can drop “yo”: the verb already shows who."});
+  const ex=meTurn("Hoy yo fui a la playa con mi amigos.");addTranslation(ex,"Today I went to the beach with my friends.");attachFix(ex,{ok:false,corrected:"Hoy fui a la playa con mis amigos.",explanation:"“Amigos” is plural, so use “mis”. You can drop “yo”: the verb already shows who."});
 }
 showExample();
 
@@ -272,13 +277,14 @@ Rules for your reply:
 Return ONLY a JSON object with this shape:
 {
   "feedback": null | {"ok": true, "explanation": "<short praise in ${s.nName}>"} | {"ok": false, "corrected": "<their message rewritten correctly in ${s.tName}>", "explanation": "<one or two short sentences in ${s.nName} explaining the main fix>"},
+  "learner_translation": null | "<natural ${s.nName} translation of the learner's last message, as they meant it>",
   "reply": "<your reply in ${s.tName}>",
   "translation": "<natural ${s.nName} translation of reply>",
   "vocab": [{"word": "<${s.tName} word or phrase from your reply>", "meaning": "<${s.nName} meaning>"}],   // 2-4 items a ${s.level} learner may not know
   "hint": "<one short tip in ${s.nName} on how they could answer, mentioning a useful structure>",
   "suggestions": [{"target": "<possible answer in ${s.tName}>", "native": "<${s.nName} meaning>"}]   // 2 options, level-appropriate
 }
-"feedback" is null on the opening turn (no learner message yet). Use "ok": true only when the message is fully natural.
+"feedback" and "learner_translation" are null on the opening turn (no learner message yet). Use "ok": true only when the message is fully natural.
 
 Conversation so far:
 ${transcript()||"(none — open the conversation with a greeting that sets up the situation)"}`;
@@ -291,6 +297,7 @@ async function partnerMove(meEl){
   try{
     const r=await sample.json(prompt(),{modelTier:"quick",cache:false});
     th.remove();
+    if(meEl&&r.learner_translation)addTranslation(meEl,r.learner_translation);
     if(meEl&&r.feedback)attachFix(meEl,r.feedback);
     if(!r.reply)throw {message:"empty reply"};
     history.push({role:"partner",text:r.reply});
@@ -327,7 +334,8 @@ $("send").addEventListener("click",send);
 input.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}});
 
 $("alwaysTranslate").addEventListener("change",()=>{const on=$("alwaysTranslate").checked;
-  chat.querySelectorAll(".turn.partner").forEach(w=>{const tr=w.querySelector("[data-tr]");tr.hidden=!on;w.querySelectorAll(".chip")[2]?.setAttribute("aria-pressed",on);});});
+  chat.querySelectorAll("[data-tr]").forEach(tr=>{tr.hidden=!on;});
+  chat.querySelectorAll(".turn.partner").forEach(w=>w.querySelectorAll(".chip")[2]?.setAttribute("aria-pressed",on));});
 
 // ---------- "how do I say…" ----------
 $("helpToggle").addEventListener("click",()=>{$("helpbox").hidden=!$("helpbox").hidden;if(!$("helpbox").hidden)$("helpInput").focus();});
