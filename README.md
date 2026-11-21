@@ -24,7 +24,27 @@ translations are there whenever you want them.
 The iOS app lives in [`app/`](app/) (Expo / React Native). [`web/`](web/)
 holds an earlier prototype that runs as a page inside Claude.
 
-## What you need
+## Web version (free, no App Store)
+
+The same app runs in Safari. The `Publish web app to GitHub Pages` workflow
+builds it on every push and publishes it to
+<https://fritzschack.github.io/languagebuddy/>.
+
+One-time setup: in the repository on GitHub, open **Settings → Pages** and set
+**Source** to **GitHub Actions**. Free GitHub accounts can only publish Pages
+from a public repository.
+
+On the iPhone, open the link in Safari, tap Share → **Add to Home Screen**,
+and enter your API key in Settings. The key stays in that browser on that
+device; the website contains no key, so anyone else who opens the link can't
+use the app without their own. Give the key a monthly spend limit in the
+Claude Console anyway.
+
+Safari differences from the native app: it asks for microphone permission,
+its speech recognition can stop after long silences (tap the button to carry
+on), and voices come from iOS's built-in set.
+
+## What you need for the native iOS app
 
 1. **A Claude API key.** Create one at <https://platform.claude.com> under
    API keys and add credit. The app asks for it on first launch and keeps it in

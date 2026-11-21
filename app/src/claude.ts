@@ -1,3 +1,4 @@
+import { Platform } from "react-native";
 import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
@@ -42,7 +43,16 @@ export class MissingApiKeyError extends Error {}
 let cached: { key: string; client: Anthropic } | null = null;
 function clientFor(apiKey: string | null): Anthropic {
   if (!apiKey) throw new MissingApiKeyError("Add your Claude API key in Settings.");
-  if (cached?.key !== apiKey) cached = { key: apiKey, client: new Anthropic({ apiKey }) };
+  if (cached?.key !== apiKey)
+    cached = {
+      key: apiKey,
+      client: new Anthropic({
+        apiKey,
+        // In the web version the key belongs to the person using this browser,
+        // who typed it in themselves; it is not embedded in the site.
+        dangerouslyAllowBrowser: Platform.OS === "web",
+      }),
+    };
   return cached.client;
 }
 

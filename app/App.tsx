@@ -71,7 +71,7 @@ function Main() {
         <View style={styles.headerButtons}>
           <HeaderButton
             theme={t}
-            label={showTranslations ? `Hide ${native}` : `Show ${native}`}
+            label={showTranslations ? `Hide ${shortName(native)}` : `Show ${shortName(native)}`}
             active={showTranslations}
             onPress={() => setShowTranslations(!showTranslations)}
           />
@@ -97,7 +97,7 @@ function Main() {
             <Text style={[styles.emptyTitle, { color: t.ink }]}>Talk with Claude in {target}</Text>
             <Text style={{ color: t.muted, textAlign: "center", lineHeight: 21 }}>
               Tap the button and the conversation runs hands-free: Claude speaks, then listens. Pause for a moment when
-              you're done talking. Tap any line to see it in {native}, or tap Hints when you're stuck.
+              you're done talking. Tap any line to see it in {shortName(native)}, or tap Hints when you're stuck.
             </Text>
           </View>
         }

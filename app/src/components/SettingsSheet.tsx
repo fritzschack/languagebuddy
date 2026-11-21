@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
+import { Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LANGUAGES, LEVELS, TOPICS, languageByLocale } from "../languages";
 import { MODEL_OPTIONS, type Settings } from "../settings";
@@ -205,8 +205,10 @@ export function SettingsSheet({ visible, theme: t, settings, apiKey, onClose }: 
               style={[styles.input, { color: t.ink, borderColor: t.line }]}
             />
             <Text style={{ color: t.muted, fontSize: 13 }}>
-              Create one at platform.claude.com under API keys. It's stored in your phone's keychain and only sent to
-              Claude.
+              Create one at platform.claude.com under API keys.{" "}
+              {Platform.OS === "web"
+                ? "It stays in this browser on this device and is only sent to Claude, never to the website."
+                : "It's stored in your phone's keychain and only sent to Claude."}
             </Text>
           </View>
         </ScrollView>

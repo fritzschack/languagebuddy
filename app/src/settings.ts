@@ -1,3 +1,4 @@
+import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
 import { LEVELS, TOPICS } from "./languages";
@@ -55,8 +56,13 @@ export async function saveSettings(s: Settings): Promise<void> {
   }
 }
 
+// On iPhone the key goes in the keychain. In the browser it stays in this
+// device's local storage: it is never part of the website or sent anywhere but Claude.
+const isWeb = Platform.OS === "web";
+
 export async function loadApiKey(): Promise<string | null> {
   try {
+    if (isWeb) return await AsyncStorage.getItem(API_KEY_KEY);
     return await SecureStore.getItemAsync(API_KEY_KEY);
   } catch {
     return null;
@@ -64,6 +70,11 @@ export async function loadApiKey(): Promise<string | null> {
 }
 
 export async function saveApiKey(key: string): Promise<void> {
+  if (isWeb) {
+    if (key.trim()) await AsyncStorage.setItem(API_KEY_KEY, key.trim());
+    else await AsyncStorage.removeItem(API_KEY_KEY);
+    return;
+  }
   if (key.trim()) await SecureStore.setItemAsync(API_KEY_KEY, key.trim());
   else await SecureStore.deleteItemAsync(API_KEY_KEY);
 }

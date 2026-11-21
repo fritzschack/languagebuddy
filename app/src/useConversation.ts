@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Platform } from "react-native";
 import * as Speech from "expo-speech";
 import { ExpoSpeechRecognitionModule, useSpeechRecognitionEvent } from "expo-speech-recognition";
 import {
@@ -34,6 +35,23 @@ export type Message =
 
 type EndIntent = "submit" | "ignore" | null;
 
+const isWeb = Platform.OS === "web";
+
+/**
+ * Safari only lets a page speak after speech has started inside a tap. Call this
+ * synchronously from a tap so later replies (which arrive after a network call) can play.
+ */
+function unlockWebSpeech() {
+  if (!isWeb || typeof window === "undefined" || !("speechSynthesis" in window)) return;
+  try {
+    const u = new SpeechSynthesisUtterance(" ");
+    u.volume = 0;
+    window.speechSynthesis.speak(u);
+  } catch {
+    // Not available; replies will still show as text.
+  }
+}
+
 let idCounter = 0;
 const newId = () => `${Date.now()}-${idCounter++}`;
 
@@ -58,6 +76,7 @@ export function useConversation(settings: Settings, apiKey: string | null) {
   const silenceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const endFallbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const restartCount = useRef(0);
+  const heardSomething = useRef(false);
   const messagesRef = useRef<Message[]>([]);
   const settingsRef = useRef(settings);
   const keyRef = useRef(apiKey);
@@ -159,6 +178,7 @@ export function useConversation(settings: Settings, apiKey: string | null) {
     transcriptRef.current = text;
     setLiveText(text);
     restartCount.current = 0;
+    heardSomething.current = true;
     if (silenceTimer.current) clearTimeout(silenceTimer.current);
     if (text.trim() && endIntentRef.current === null) {
       silenceTimer.current = setTimeout(finishTurn, settingsRef.current.silenceMs);
@@ -177,7 +197,7 @@ export function useConversation(settings: Settings, apiKey: string | null) {
     if (!activeRef.current || phaseRef.current !== "listening") return;
     if (transcriptRef.current.trim()) {
       submit(transcriptRef.current);
-    } else if (restartCount.current++ < 5) {
+    } else if (restartCount.current++ < (isWeb ? 10 : 5)) {
       listen();
     } else {
       pause();
@@ -187,9 +207,17 @@ export function useConversation(settings: Settings, apiKey: string | null) {
 
   useSpeechRecognitionEvent("error", (e) => {
     if (e.error === "aborted" || e.error === "no-speech") return; // "end" follows and handles it
-    if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+    if (isWeb && e.error === "not-allowed" && heardSomething.current) {
+      // Safari sometimes wants a fresh tap before it listens again.
       pause();
-      setError("Microphone or speech recognition access is off. Turn it on in the Settings app under Language Buddy.");
+      setError("Tap the button to keep talking.");
+    } else if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+      pause();
+      setError(
+        isWeb
+          ? "The microphone is blocked for this page. In Safari, tap aA in the address bar → Website Settings → Microphone → Allow."
+          : "Microphone or speech recognition access is off. Turn it on in the Settings app under Language Buddy.",
+      );
     } else if (e.error === "language-not-supported") {
       pause();
       setError("Speech recognition doesn't support this language on your phone. Pick another variant in Settings.");
@@ -282,6 +310,7 @@ export function useConversation(settings: Settings, apiKey: string | null) {
 
   /** The big button: start, send now, or interrupt the partner. */
   const tapMain = () => {
+    unlockWebSpeech();
     switch (phaseRef.current) {
       case "idle":
         start();
@@ -300,6 +329,7 @@ export function useConversation(settings: Settings, apiKey: string | null) {
 
   /** Next thing you say is in your own language: "How do I say …?" */
   const toggleHelp = () => {
+    unlockWebSpeech();
     const on = !helpRef.current;
     setHelpMode(on);
     if (!activeRef.current) {
