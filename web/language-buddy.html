@@ -1,0 +1,353 @@
+<title>Language Buddy</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout: one-column chat app — settings strip on top, conversation in the middle, voice composer pinned at the bottom. */
+:root{
+  --bg:#eef2f1; --surface:#ffffff; --ink:#12302c; --muted:#5b716d; --line:#d3dedb;
+  --accent:#0f7a68; --accent-ink:#ffffff; --accent-soft:#d7efe9;
+  --sun:#f2b33d; --sun-soft:#fdf0d4; --sun-ink:#6b4a05;
+  --user:#163f39; --user-ink:#eaf6f3;
+  --danger:#b3412f;
+  --display:"Bricolage Grotesque", "Inter", system-ui, sans-serif;
+  --body:"Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0d1a18; --surface:#142623; --ink:#e3efec; --muted:#93aaa5; --line:#27403b;
+  --accent:#3cc2a6; --accent-ink:#06201b; --accent-soft:#173a33;
+  --sun:#f2b33d; --sun-soft:#3a2f17; --sun-ink:#f8d58e;
+  --user:#2a6f63; --user-ink:#f1fbf8; --danger:#ee8a77; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d1a18; --surface:#142623; --ink:#e3efec; --muted:#93aaa5; --line:#27403b;
+  --accent:#3cc2a6; --accent-ink:#06201b; --accent-soft:#173a33;
+  --sun:#f2b33d; --sun-soft:#3a2f17; --sun-ink:#f8d58e;
+  --user:#2a6f63; --user-ink:#f1fbf8; --danger:#ee8a77; color-scheme:dark}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45}
+.app{display:flex;flex-direction:column;height:100%;max-width:760px;margin:0 auto;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{padding-block:14px 10px;display:flex;flex-direction:column;gap:10px}
+.brand{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-family:var(--display);font-weight:700;font-size:1.5rem;margin:0;letter-spacing:-.01em}
+h1 span{color:var(--accent)}
+.status{font-size:.8rem;color:var(--muted)}
+.settings{display:flex;flex-wrap:wrap;gap:8px}
+.field{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1 1 130px}
+.field label{font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+select,input[type=text]{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:7px 9px;min-width:0;width:100%}
+.toggles{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.82rem;color:var(--muted);align-items:center}
+.toggles label{display:flex;gap:6px;align-items:center;cursor:pointer}
+.toggles input{accent-color:var(--accent)}
+button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
+button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn{border-radius:999px;padding:8px 16px;font-weight:600;background:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:transparent;color:var(--accent);border:1px solid var(--line)}
+.btn:disabled{opacity:.5;cursor:default}
+
+main{flex:1;overflow-y:auto;padding-block:8px 16px;display:flex;flex-direction:column;gap:14px;min-height:0}
+.example-tag{align-self:center;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--sun-ink);background:var(--sun-soft);padding:3px 10px;border-radius:999px}
+.turn{display:flex;flex-direction:column;gap:6px;max-width:88%;min-width:0}
+.turn.partner{align-self:flex-start}
+.turn.me{align-self:flex-end;align-items:flex-end}
+.who{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.bubble{padding:10px 14px;border-radius:18px;font-size:1.05rem;overflow-wrap:anywhere}
+.partner .bubble{background:var(--surface);border:1px solid var(--line);border-bottom-left-radius:6px}
+.me .bubble{background:var(--user);color:var(--user-ink);border-bottom-right-radius:6px}
+.tools{display:flex;flex-wrap:wrap;gap:4px}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:.78rem;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.chip svg{width:14px;height:14px}
+.chip[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--ink)}
+.translation{font-size:.9rem;color:var(--muted);padding:2px 4px;font-style:italic}
+.panel{background:var(--sun-soft);color:var(--ink);border-radius:12px;padding:10px 12px;font-size:.88rem;display:flex;flex-direction:column;gap:8px}
+.panel h3{margin:0;font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;color:var(--sun-ink)}
+.vocab{display:grid;grid-template-columns:auto 1fr;gap:3px 12px}
+.vocab b{font-weight:600}
+.sugg{display:flex;flex-direction:column;gap:4px}
+.sugg button{text-align:left;padding:6px 10px;border-radius:10px;background:var(--surface);border:1px solid var(--line)}
+.sugg small{display:block;color:var(--muted)}
+.fix{border-left:3px solid var(--sun);background:var(--surface);border-radius:8px;padding:8px 10px;font-size:.88rem;max-width:100%;text-align:left}
+.fix .better{font-weight:600}
+.fix .why{color:var(--muted)}
+.fix.good{border-left-color:var(--accent)}
+.thinking{align-self:flex-start;color:var(--muted);font-size:.9rem;display:flex;gap:4px;align-items:center}
+.thinking i{width:6px;height:6px;border-radius:50%;background:var(--muted);animation:b 1s infinite}
+.thinking i:nth-child(2){animation-delay:.15s}.thinking i:nth-child(3){animation-delay:.3s}
+@keyframes b{0%,80%,100%{opacity:.25}40%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.thinking i{animation:none;opacity:.6}.mic.live{animation:none}}
+
+footer{padding-block:10px max(12px,env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);display:flex;flex-direction:column;gap:8px;background:var(--bg)}
+.composer{display:flex;gap:8px;align-items:flex-end}
+textarea{flex:1;min-width:0;font:inherit;font-size:1rem;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:10px 12px;resize:none;max-height:120px}
+.mic{flex:none;width:52px;height:52px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center}
+.mic svg{width:24px;height:24px}
+.mic.live{background:var(--danger);animation:pulse 1.4s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--danger) 50%,transparent)}100%{box-shadow:0 0 0 14px transparent}}
+.send{flex:none;width:44px;height:44px;border-radius:50%;background:var(--surface);border:1px solid var(--line);display:grid;place-items:center;color:var(--accent)}
+.send svg{width:20px;height:20px}
+.subrow{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:.8rem;color:var(--muted);align-items:center}
+.helpbtn{color:var(--accent);font-weight:600;font-size:.82rem}
+.helpbox{display:flex;gap:6px}
+.notice{font-size:.8rem;color:var(--muted)}
+.err{color:var(--danger)}
+</style>
+
+<div class="app">
+  <header>
+    <div class="brand">
+      <h1>Language <span>Buddy</span></h1>
+      <div class="status" id="status">Pick your languages, then press Start.</div>
+    </div>
+    <div class="settings">
+      <div class="field"><label for="target">I'm practicing</label><select id="target"></select></div>
+      <div class="field"><label for="native">My language</label><select id="native"></select></div>
+      <div class="field"><label for="level">Level</label>
+        <select id="level"><option>Beginner (A1–A2)</option><option selected>Intermediate (B1–B2)</option><option>Advanced (C1–C2)</option></select></div>
+      <div class="field"><label for="topic">Situation</label>
+        <select id="topic">
+          <option>Free chat about my day</option><option>Ordering at a café</option><option>Asking for directions</option>
+          <option>Checking into a hotel</option><option>Meeting a new friend</option><option>At the doctor</option>
+          <option>Job interview</option><option>Shopping at a market</option><option>Talking about movies and music</option>
+        </select></div>
+    </div>
+    <div class="toggles">
+      <label><input type="checkbox" id="autoSpeak" checked> Speak replies aloud</label>
+      <label><input type="checkbox" id="alwaysTranslate"> Always show translation</label>
+      <label><input type="checkbox" id="autoSend" checked> Send when I stop talking</label>
+      <label>Speed <input type="range" id="rate" min="0.7" max="1.2" step="0.05" value="0.9" aria-label="Speaking speed"></label>
+      <button class="btn" id="startBtn">Start</button>
+    </div>
+  </header>
+
+  <main id="chat" aria-live="polite"></main>
+
+  <footer>
+    <div class="composer">
+      <button class="mic" id="mic" aria-label="Talk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+      <textarea id="input" rows="1" placeholder="Speak or type your answer…"></textarea>
+      <button class="send" id="send" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l16-8-6 16-2-7z"/></svg></button>
+    </div>
+    <div class="subrow">
+      <span id="micNote" class="notice"></span>
+      <button class="helpbtn" id="helpToggle">Stuck? Ask how to say something</button>
+    </div>
+    <div class="helpbox" id="helpbox" hidden>
+      <input type="text" id="helpInput" placeholder="Type it in your language…">
+      <button class="btn" id="helpGo">Translate</button>
+    </div>
+  </footer>
+</div>
+
+<script>
+const LANGS=[["Spanish","es"],["French","fr"],["German","de"],["Italian","it"],["Portuguese (Brazil)","pt-BR"],["Japanese","ja"],["Korean","ko"],["Mandarin Chinese","zh"],["Dutch","nl"],["English","en"],["Arabic","ar"],["Russian","ru"],["Hindi","hi"],["Turkish","tr"],["Swedish","sv"],["Polish","pl"],["Greek","el"]];
+const $=id=>document.getElementById(id);
+const chat=$("chat"), input=$("input");
+const ICON={
+  play:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg>',
+  slow:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M10 2h4"/></svg>',
+  tr:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 5h8M8 3v2M6 5c0 4 3 7 6 8M10 5c-1 4-4 7-6 8M13 20l4-9 4 9M14.5 17h5"/></svg>',
+  hint:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z"/></svg>'
+};
+
+// ---------- settings ----------
+for(const id of ["target","native"]){const s=$(id);for(const [n,c] of LANGS){const o=document.createElement("option");o.value=c;o.textContent=n;s.append(o);}}
+$("target").value="es";$("native").value="en";
+const PREF_KEYS=["target","native","level","topic","autoSpeak","alwaysTranslate","autoSend","rate"];
+try{const p=JSON.parse(localStorage.getItem("lb-prefs")||"{}");for(const k of PREF_KEYS){if(p[k]===undefined)continue;const el=$(k);if(el.type==="checkbox")el.checked=p[k];else el.value=p[k];}}catch(e){}
+function savePrefs(){try{const p={};for(const k of PREF_KEYS){const el=$(k);p[k]=el.type==="checkbox"?el.checked:el.value;}localStorage.setItem("lb-prefs",JSON.stringify(p));}catch(e){}}
+PREF_KEYS.forEach(k=>$(k).addEventListener("change",savePrefs));
+const langName=c=>(LANGS.find(l=>l[1]===c)||[c])[0];
+const S=()=>({target:$("target").value,native:$("native").value,tName:langName($("target").value),nName:langName($("native").value),level:$("level").value,topic:$("topic").value});
+
+// ---------- capabilities ----------
+let sample=null, tts=null, dict=null, history=[], busy=false, started=false;
+const setStatus=(t,err)=>{const s=$("status");s.textContent=t;s.classList.toggle("err",!!err);};
+(async()=>{
+  const c=window.claude; if(!c||!c.use){setStatus("Open this page in Claude to chat.",true);return;}
+  [sample,tts,dict]=await Promise.all([c.use("sample"),c.use("tts"),c.use("dictation")]);
+  if(!sample)setStatus("Claude isn't available in this view, so the partner can't reply.",true);
+  if(!dict){$("mic").hidden=true;$("micNote").textContent="Voice input needs Chrome or the Claude desktop app. Type instead.";}
+  else{
+    dict.onPartial(({text})=>{partial=text;renderInput();});
+    dict.onFinal(({text})=>{committed+=text;partial="";if(!committed.trim())committed=committed.trimStart();renderInput();});
+    dict.onState(({state,reason})=>{
+      $("mic").classList.toggle("live",state!=="idle");
+      $("mic").setAttribute("aria-label",state==="idle"?"Talk":"Stop talking");
+      if(state==="listening")$("micNote").textContent="Listening in "+S().tName+"… tap the mic again when you're done.";
+      if(state==="idle"){
+        $("micNote").textContent=reason==="not_granted"?"Microphone is off for this page. Type instead.":reason==="unavailable"?"Voice input isn't available for "+S().tName+" here. Type instead.":"";
+        if((reason==="stopped"||reason==="viewer_stopped")&&$("autoSend").checked&&input.value.trim())send();
+      }
+    });
+  }
+  if(tts){tts.setRate?.(+$("rate").value);}
+})();
+let committed="",partial="";
+function renderInput(){input.value=(committed+(partial?(committed?" ":"")+partial:"")).trimStart();autosize();}
+input.addEventListener("input",()=>{committed=input.value;partial="";autosize();});
+function autosize(){input.style.height="auto";input.style.height=Math.min(input.scrollHeight,120)+"px";}
+$("rate").addEventListener("input",()=>tts?.setRate?.(+$("rate").value));
+
+function speak(text,rate){
+  const lang=S().target;
+  if(tts){if(dict?.active())return;return tts.speak(text,{language:lang,rate:rate??+$("rate").value}).catch(e=>{if(e.code==="not_granted")tts=null;});}
+  if("speechSynthesis" in window){try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang=lang;u.rate=rate??+$("rate").value;speechSynthesis.speak(u);}catch(e){}}
+}
+
+$("mic").addEventListener("click",()=>{
+  if(!dict)return;
+  if(dict.active()){dict.stop();return;}
+  tts?.stop?.().catch(()=>{});
+  committed=input.value;partial="";
+  dict.start({language:S().target}).catch(e=>{
+    if(e.code==="unavailable")$("micNote").textContent="Voice input isn't available for "+S().tName+" here. Type instead.";
+    else if(e.code==="not_granted")$("micNote").textContent="Microphone is off for this page. Type instead.";
+    else if(e.code!=="stopped")$("micNote").textContent="Couldn't start the microphone. Try again.";
+  });
+});
+
+// ---------- rendering ----------
+function el(tag,cls,html){const e=document.createElement(tag);if(cls)e.className=cls;if(html!=null)e.innerHTML=html;return e;}
+function esc(s){return String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+function scrollEnd(){chat.scrollTop=chat.scrollHeight;}
+
+function partnerTurn(t,{example=false}={}){
+  const w=el("div","turn partner");
+  w.append(el("div","who",S().tName+" partner"));
+  w.append(el("div","bubble",esc(t.reply)));
+  const tr=el("div","translation",esc(t.translation)); tr.hidden=!$("alwaysTranslate").checked; tr.dataset.tr="1";
+  const panel=el("div","panel"); panel.hidden=true;
+  if(t.vocab?.length){panel.append(el("h3",null,"Key words"));const v=el("div","vocab");for(const x of t.vocab)v.innerHTML+=`<b>${esc(x.word)}</b><span>${esc(x.meaning)}</span>`;panel.append(v);}
+  if(t.hint){panel.append(el("h3",null,"Tip"));panel.append(el("div",null,esc(t.hint)));}
+  if(t.suggestions?.length){panel.append(el("h3",null,"You could answer"));const sg=el("div","sugg");
+    for(const s of t.suggestions){const b=el("button",null,`${esc(s.target)}<small>${esc(s.native)}</small>`);b.onclick=()=>{committed=s.target;partial="";renderInput();input.focus();speak(s.target);};sg.append(b);}panel.append(sg);}
+  const tools=el("div","tools");
+  const mk=(icon,label,fn)=>{const b=el("button","chip",ICON[icon]+label);b.onclick=()=>fn(b);tools.append(b);return b;};
+  mk("play","Play",()=>speak(t.reply));
+  mk("slow","Slower",()=>speak(t.reply,0.7));
+  const tb=mk("tr","Translate",b=>{tr.hidden=!tr.hidden;b.setAttribute("aria-pressed",!tr.hidden);});tb.setAttribute("aria-pressed",!tr.hidden);
+  const hb=mk("hint","Hints",b=>{panel.hidden=!panel.hidden;b.setAttribute("aria-pressed",!panel.hidden);if(!panel.hidden)scrollEnd();});hb.setAttribute("aria-pressed","false");
+  w.append(tools,tr,panel);
+  chat.append(w);scrollEnd();
+  return w;
+}
+function meTurn(text,fix){
+  const w=el("div","turn me");
+  w.append(el("div","who","You"));
+  w.append(el("div","bubble",esc(text)));
+  chat.append(w);
+  if(fix)attachFix(w,fix);
+  scrollEnd();return w;
+}
+function attachFix(w,fix){
+  if(!fix)return;
+  if(fix.ok){w.append(el("div","fix good",`<span class="why">${esc(fix.explanation||"Sounds natural.")}</span>`));}
+  else{const f=el("div","fix",`<div class="better">${esc(fix.corrected)}</div><div class="why">${esc(fix.explanation)}</div>`);
+    const b=el("button","chip",ICON.play+"Hear it");b.style.marginTop="6px";b.onclick=()=>speak(fix.corrected);f.append(b);w.append(f);}
+  scrollEnd();
+}
+
+// ---------- example (shown before starting) ----------
+function showExample(){
+  chat.innerHTML="";chat.append(el("div","example-tag","Example conversation"));
+  partnerTurn({reply:"¡Hola! ¿Qué tal tu día? ¿Hiciste algo interesante hoy?",translation:"Hi! How's your day? Did you do anything interesting today?",
+    vocab:[{word:"¿Qué tal…?",meaning:"How's…? (casual)"},{word:"hiciste",meaning:"you did (past of hacer)"}],
+    hint:"Answer with the past tense: “Hoy fui…”, “Hoy trabajé…”.",
+    suggestions:[{target:"Hoy fui al gimnasio y después trabajé.",native:"Today I went to the gym and then worked."},{target:"No mucho, estuve en casa.",native:"Not much, I was at home."}]},{example:true});
+  meTurn("Hoy yo fui a la playa con mi amigos.",{ok:false,corrected:"Hoy fui a la playa con mis amigos.",explanation:"“Amigos” is plural, so use “mis”. You can drop “yo”: the verb already shows who."});
+}
+showExample();
+
+// ---------- the conversation ----------
+function transcript(){return history.map(h=>(h.role==="partner"?"PARTNER: ":"LEARNER: ")+h.text).join("\n");}
+function prompt(){
+  const s=S();
+  return `You are a warm, patient conversation partner helping someone practice ${s.tName}. Their native language is ${s.nName}. Their level: ${s.level}. Situation to role-play: ${s.topic}.
+
+Rules for your reply:
+- Write your reply ONLY in ${s.tName}. 1–3 short sentences, matched to the learner's level (simple words and present tense for beginners). End with a question or prompt that keeps the conversation going. Stay in the role-play.
+- If the learner wrote in ${s.nName} or mixed languages, they are stuck: gently model how to say it in ${s.tName} inside "feedback.corrected", and continue.
+- Their message came from speech-to-text, so ignore missing punctuation, capitalization and accents that transcription drops. Only correct real grammar, vocabulary or word-order mistakes.
+
+Return ONLY a JSON object with this shape:
+{
+  "feedback": null | {"ok": true, "explanation": "<short praise in ${s.nName}>"} | {"ok": false, "corrected": "<their message rewritten correctly in ${s.tName}>", "explanation": "<one or two short sentences in ${s.nName} explaining the main fix>"},
+  "reply": "<your reply in ${s.tName}>",
+  "translation": "<natural ${s.nName} translation of reply>",
+  "vocab": [{"word": "<${s.tName} word or phrase from your reply>", "meaning": "<${s.nName} meaning>"}],   // 2-4 items a ${s.level} learner may not know
+  "hint": "<one short tip in ${s.nName} on how they could answer, mentioning a useful structure>",
+  "suggestions": [{"target": "<possible answer in ${s.tName}>", "native": "<${s.nName} meaning>"}]   // 2 options, level-appropriate
+}
+"feedback" is null on the opening turn (no learner message yet). Use "ok": true only when the message is fully natural.
+
+Conversation so far:
+${transcript()||"(none — open the conversation with a greeting that sets up the situation)"}`;
+}
+function thinking(){const t=el("div","thinking","<i></i><i></i><i></i>");chat.append(t);scrollEnd();return t;}
+
+async function partnerMove(meEl){
+  busy=true;$("send").disabled=true;
+  const th=thinking();
+  try{
+    const r=await sample.json(prompt(),{modelTier:"quick",cache:false});
+    th.remove();
+    if(meEl&&r.feedback)attachFix(meEl,r.feedback);
+    if(!r.reply)throw {message:"empty reply"};
+    history.push({role:"partner",text:r.reply});
+    partnerTurn(r);
+    setStatus(`Practicing ${S().tName} · ${S().topic}`);
+    if($("autoSpeak").checked)speak(r.reply);
+  }catch(e){
+    th.remove();
+    const msg=e?.code==="not_granted"?"Claude access was declined for this page. Reload to allow it.":e?.code==="rate_limited"?"Too many requests right now. Wait a moment and send again.":"The partner couldn't reply. Send again to retry.";
+    setStatus(msg,true);
+  }finally{busy=false;$("send").disabled=false;}
+}
+
+$("startBtn").addEventListener("click",()=>{
+  if(!sample){setStatus("Claude isn't available in this view.",true);return;}
+  dict?.active()&&dict.stop();
+  history=[];started=true;chat.innerHTML="";
+  $("startBtn").textContent="Restart";
+  setStatus(`Starting ${S().tName} practice…`);
+  partnerMove(null);
+});
+
+function send(){
+  const text=input.value.trim();
+  if(!text||busy)return;
+  if(!sample){setStatus("Claude isn't available in this view.",true);return;}
+  if(!started){history=[];chat.innerHTML="";started=true;$("startBtn").textContent="Restart";}
+  committed="";partial="";input.value="";autosize();
+  history.push({role:"learner",text});
+  const m=meTurn(text);
+  partnerMove(m);
+}
+$("send").addEventListener("click",send);
+input.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}});
+
+$("alwaysTranslate").addEventListener("change",()=>{const on=$("alwaysTranslate").checked;
+  chat.querySelectorAll(".turn.partner").forEach(w=>{const tr=w.querySelector("[data-tr]");tr.hidden=!on;w.querySelectorAll(".chip")[2]?.setAttribute("aria-pressed",on);});});
+
+// ---------- "how do I say…" ----------
+$("helpToggle").addEventListener("click",()=>{$("helpbox").hidden=!$("helpbox").hidden;if(!$("helpbox").hidden)$("helpInput").focus();});
+async function helpSay(){
+  const q=$("helpInput").value.trim(); if(!q||!sample)return;
+  const s=S(); $("helpGo").disabled=true;
+  try{
+    const r=await sample.json(`A ${s.level} learner of ${s.tName} (native ${s.nName}) wants to say this in the current conversation (${s.topic}): "${q}"
+Recent conversation:\n${transcript().split("\n").slice(-4).join("\n")}
+Return ONLY JSON: {"target":"<natural ${s.tName} phrasing at their level>","note":"<one short ${s.nName} note on a key word or grammar point>"}`,{modelTier:"quick"});
+    const w=el("div","panel");w.style.alignSelf="stretch";
+    w.innerHTML=`<h3>How to say “${esc(q)}”</h3><div style="font-size:1.05rem;font-weight:600">${esc(r.target)}</div><div>${esc(r.note)}</div>`;
+    const row=el("div","tools");
+    const p=el("button","chip",ICON.play+"Hear it");p.onclick=()=>speak(r.target);
+    const u=el("button","chip","Use this");u.onclick=()=>{committed=r.target;partial="";renderInput();input.focus();};
+    row.append(p,u);w.append(row);chat.append(w);scrollEnd();
+    $("helpInput").value="";speak(r.target);
+  }catch(e){setStatus("Couldn't translate that. Try again.",true);}
+  finally{$("helpGo").disabled=false;}
+}
+$("helpGo").addEventListener("click",helpSay);
+$("helpInput").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();helpSay();}});
+</script>
